@@ -16,15 +16,18 @@ var wzd = function($){
                   "n" : "#btn-next"
             },
             stepGoto:0,
+            stepPrevOnSeen: true,
             init:function( conf ){
                   wzd.container = $(conf.container);
                   wzd.steps = conf.steps;
                   wzd.groups = conf.groups;
-                  if(conf.stepBegin){
+                  if(conf.stepBegin != undefined){
                         wzd.stepBegin = conf.stepBegin;
                   }
+                  if(conf.stepPrevOnSeen != undefined){
+                        wzd.stepPrevOnSeen = conf.stepPrevOnSeen;
+                  }
                   wzd.stepMarkup = $(".step");
-
                   wzd.start();
             },
             start:function(){
@@ -52,7 +55,6 @@ var wzd = function($){
             },
             // Order activity
             buildStatus: function( step , c ){
-
                   if( step >= wzd.steps.length ){
                         msg("El paso "+step+" no existe");
                   }else{
@@ -60,24 +62,32 @@ var wzd = function($){
 
                               if( i > step ){
                                     // Set the nexts steps and groups inactive (active = false)
+                                    msg("Paso "+i+" UNSEEN");
                                     wzd.groups[wzd.steps[i].group].active = false;
                                     wzd.groups[wzd.steps[i].group].completed = false;
                                     wzd.steps[i].active = false;
                                     wzd.steps[i].completed = false;
+                                    wzd.steps[i].seen = false;
+                                   
                               }else{
                                     if( i == step ){
                                           // Set the current step and group active
+                                          msg("Paso "+i+" SEEN");
                                           wzd.groups[wzd.steps[i].group].active = true;
                                           wzd.groups[wzd.steps[i].group].completed = false;
                                           wzd.steps[i].active = true;
                                           wzd.steps[i].completed = false;
+                                          wzd.steps[i].seen = true;
+                                          
                                     }else{
                                           // Set steps and groups completed
-                                          msg("Paso "+i+" completado");
+                                          //msg("Paso "+i+" completado");
+                                          msg("Paso "+i+" UNSEEN");
                                           wzd.steps[i].active = false;
                                           wzd.steps[i].completed = true;
                                           wzd.groups[wzd.steps[i].group].active = false;
                                           wzd.groups[wzd.steps[i].group].completed = true;
+                                          wzd.steps[i].seen = false;
                                     }
                               }
                               // Save reference to last item iterated of the group
@@ -400,6 +410,9 @@ var wzd = function($){
                         wzd.buttonChange( $(wzd.button.n) , 1 , "Siguiente" );
                   }
 
+                  // Set step seen
+                  wzd.setStepSeen(true);
+
                   // If render is set to true, run function to set the next step
                   if(render){
                         // If it's not defined if the group has changed, verify if it's true or false
@@ -451,6 +464,14 @@ var wzd = function($){
                   wzd.active.deploy.title = s.title;
                   wzd.active.deploy.id = s.dwid;
             },
+            setStepSeen: function(e){
+                  // Set attribute "seen" for prevfx
+                  wzd.steps[  wzd.active.step.number ].seen = e;
+            },
+            isStepSeen: function( n ){
+                  // return value of attribute "seen" in step n
+                  return wzd.steps[ n ].seen;
+            },
             // Change activities
             manageNavigation: function(){
                   // When prev button (<-) is clicked
@@ -464,9 +485,16 @@ var wzd = function($){
                               notify.close();
                         }
                         wzd.manageNotify(0);
-                        
-                        // Set step
-                        wzd.setStep(ns);
+
+                        // If step has not been seen, run prev-callback; otherwise, setStep()
+                        if( wzd.isStepSeen( ns ) == false && wzd.stepPrevOnSeen == true){
+                              wzd.verifyCallback( 0 , function(){
+                                    wzd.setStep(ns);
+                              },ns);
+                        }else{
+                              // Set step
+                              wzd.setStep(ns);
+                        }  
                   });
                   // When next button (->) is clicked
                   $(wzd.button.n).click(function(){
@@ -477,7 +505,7 @@ var wzd = function($){
                               wzd.setStep(ns);
                         });
                   });
-                  // When numbers links are clicked directly to return
+                  // When numbers links are clicked directly
                   $(".goto").click(function(){
 
                         var ns = $(this).data("step");
@@ -497,11 +525,16 @@ var wzd = function($){
                               }else{
                                     wzd.manageNotify(0);
                               }
-                              // Set step
-                              wzd.setStep(ns);
-                        }
-                        
-                        
+                              // If step has not been seen, run prev-callback; otherwise, setStep()
+                              if( wzd.isStepSeen( ns ) == false && wzd.stepPrevOnSeen == true){
+                                    wzd.verifyCallback( 0 , function(){
+                                          wzd.setStep(ns);
+                                    },ns);
+                              }else{
+                                    // Set step
+                                    wzd.setStep(ns);
+                              }
+                        } 
                   });
             },
             manageLoader: function(l){
@@ -542,23 +575,31 @@ var wzd = function($){
                   }
             },
             // Callback activities
-            verifyCallback: function(btn , c){
+            verifyCallback: function(btn , c , otherNumber){
                   // By default, any step has a callback
+                  var gonnaCallback = false;
+                  var stepNumber;
+                  if( otherNumber != undefined){
+                        stepNumber = otherNumber;
+                  }else{
+                        stepNumber = wzd.active.step.number
+                  }
                   var gonnaCallback = false;
                   switch( btn ){
                         //If it's  called for prev function, verify if step has any prev function, if it's true, save its name
                         case 0:
-                              if($.isFunction(window[wzd.steps[wzd.active.step.number].prevfx])) {
-                                    gonnaCallback = wzd.steps[wzd.active.step.number].prevfx;
+                              if($.isFunction(window[wzd.steps[ stepNumber ].prevfx])) {
+                                    gonnaCallback = wzd.steps[ stepNumber ].prevfx;
                               }
                         break;
                         //If it's  called for post function, verify if step has any post function, if it's true, save its name
                         case 1:
-                              if($.isFunction(window[wzd.steps[wzd.active.step.number].postfx])) {
-                                    gonnaCallback = wzd.steps[wzd.active.step.number].postfx;
+                              if($.isFunction(window[wzd.steps[ stepNumber ].postfx])) {
+                                    gonnaCallback = wzd.steps[ stepNumber ].postfx;
                               }
                         break;
                   }
+                  
                   // Disable main navigation buttons
                   wzd.buttonChange( $(wzd.button.p) , 0 , false );
                   wzd.buttonChange( $(wzd.button.n) , 0 , false );
@@ -686,7 +727,16 @@ var notify = function($){
                   $(".notify-save").attr("disabled",true).addClass("disabled");
                   $(".notify-discard").attr("disabled",true).addClass("disabled");
                   wzd.verifyCallback( 1 , function(){
-                        wzd.setStep(stepGoto);
+                        if( wzd.isStepSeen( stepGoto ) == false && wzd.prevOnSeen == true){
+                              notify.close();
+                              wzd.verifyCallback( 0 , function(){
+                                    wzd.setStep(stepGoto);
+                              },stepGoto);
+                        }else{
+                              // Set step
+                              wzd.setStep(stepGoto);
+                              notify.close();
+                        }
                         notify.close();
                   });
             },
