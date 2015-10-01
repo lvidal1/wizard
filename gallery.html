@@ -1,0 +1,113 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/font-awesome.css">
+    <link rel="stylesheet" type="text/css" href="css/animate.css">
+    <link rel="stylesheet" type="text/css" href="css/gallery.css">
+
+	</head>
+	<body>
+    <div class="container">
+      <div class="gallery-wrapper">
+        <div class="slider">
+          <img src="img/colonias/1.jpg">
+          <img src="img/colonias/2.jpg">
+          <img src="img/colonias/3.jpg">
+          <img src="img/colonias/4.jpg">
+        </div>
+      </div>
+    </div>
+	</body>
+  <script src="js/jquery.min.js" type="text/javascript"></script>
+  <script src="js/jquery.actual.min.js" type="text/javascript"></script>
+  <script src="lib/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="lib/slick/slick.css">
+  <link rel="stylesheet" type="text/css" href="lib/slick/slick-theme.css">
+  <script src="lib/slick/slick.min.js" type="text/javascript"></script>
+
+  <script type="text/javascript">
+
+    (function(w) {
+      w(window.jQuery, window, document);
+    }(function($, window, document) {
+      $(function() {
+        
+
+        var $galleryWrapper = $(".gallery-wrapper");
+        var $g = {
+                    h: $galleryWrapper.height(),
+                    w: $galleryWrapper.width()
+                  };
+        var $imgs = $(".slider img");
+        var $x = {};
+        var $tipo = 0;
+        $.each($imgs,function(i,e){
+          console.log($(e));
+          console.log($(e).attr("src"))
+          $x = {
+                w: $(e).actual( "width" ),
+                h: $(e).actual( "height" )
+          };
+          console.log($x);
+          console.log( $x.h +" > "+ $g.h+" && "+$x.w+" > "+$g.w);
+          if( $x.h > $g.h && $x.w > $g.w ){
+            if( $x.w >= $x.h ){
+              $tipo = 1;
+              console.log("1 - tipo 1");
+            }else{
+              $tipo = 2;
+              console.log("1 - tipo 2");
+            }
+          }else{
+            if( $x.h <= $g.h && $x.w > $g.w ){
+              $tipo = 1;
+              console.log("2 - tipo 2");
+            }else{
+              if( $x.h > $g.h && $x.w <= $g.w ){
+                $tipo = 2;
+                console.log("3 -tipo 2");
+              }else{
+                if( $x.h <= $g.h && $x.w <= $g.w ){
+                  $tipo = 0;
+                  console.log("4 - tipo 0");
+                }else{
+                  
+                }
+              }
+            }
+          }
+          
+          console.log("tipo -> "+$tipo)
+          var $class = "";
+          switch( $tipo ){
+            case 0:
+              $class = "img-fill";
+            break;
+            case 1:
+              $class = "img-full-width";
+            break;
+            case 2:
+              $class = "img-full-height";
+            break;
+          }
+          $(e).addClass($class).attr("data-tipo",$tipo);
+        });
+
+        $galleryWrapper.addClass("build");
+        $('.slider').slick({
+  dots: true,
+  infinite: true,
+  speed: 500,
+  fade: true,
+  cssEase: 'linear'
+});
+
+      });
+    }));
+        
+  </script>
+</html>
